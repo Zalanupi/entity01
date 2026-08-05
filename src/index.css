@@ -49,6 +49,31 @@ body::after {
 
 /* === KEYFRAMES === */
 
+@keyframes glitch {
+  0%,
+  90%,
+  100% {
+    transform: translate(0);
+    text-shadow: none;
+  }
+  92% {
+    transform: translate(-2px, 1px);
+    text-shadow: -2px 0 rgba(220, 38, 38, 0.6), 2px 0 rgba(0, 200, 255, 0.4);
+  }
+  94% {
+    transform: translate(2px, -1px);
+    text-shadow: 2px 0 rgba(220, 38, 38, 0.6), -2px 0 rgba(0, 200, 255, 0.4);
+  }
+  96% {
+    transform: translate(-1px, 1px);
+    text-shadow: -1px 0 rgba(220, 38, 38, 0.8), 1px 0 rgba(0, 200, 255, 0.3);
+  }
+  98% {
+    transform: translate(1px, 0);
+    text-shadow: 1px 0 rgba(220, 38, 38, 0.5), -1px 0 rgba(0, 200, 255, 0.2);
+  }
+}
+
 @keyframes shake {
   0%,
   100% {
@@ -97,4 +122,8 @@ body::after {
 
 .animate-fade-in-up {
   animation: fade-in-up 500ms ease-out;
+}
+
+.animate-glitch {
+  animation: glitch 4s infinite;
 }
