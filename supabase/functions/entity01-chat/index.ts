@@ -22,8 +22,10 @@ const corsHeaders = {
 
 const FIREWORKS_URL =
   "https://api.fireworks.ai/inference/v1/chat/completions";
-// Configurable model constant (PRD Phase 5).
-const MODEL = "accounts/fireworks/models/deepseek-v4-flash";
+// Kimi K2 reasoning model: Fireworks returns reasoning in `reasoning_content`
+// or wrapped in `<think>...</think>` tags inside `content`. We always strip
+// it before surfacing dialogue to the player.
+const MODEL = "accounts/fireworks/models/kimi-k2-instruct-0905";
 // Cap conversation history sent upstream (PRD open question default).
 const MAX_HISTORY = 20;
 
@@ -57,6 +59,31 @@ function parseAction(value: unknown): EntityAction {
   return typeof value === "string" && ALLOWED_ACTIONS.includes(value)
     ? (value as EntityAction)
     : "NONE";
+}
+
+/**
+ * Strip reasoning / chain-of-thought traces from model text. Reasoning models
+ * (Kimi K2 on Fireworks) may emit thinking inside `<think>...</think>` tags.
+ */
+function stripReasoning(text: string): string {
+  return text
+    .replace(/<think>[\s\S]*?<\/think>/gi, "")
+    .replace(/<\/?think>/gi, "")
+    .trim();
+}
+
+/**
+ * Final polish on the dialogue line: remove any stray reasoning markers,
+ * planning lines, or "Action: ..." commentary that leaked into the reply text.
+ * The action is handled separately by the JSON `action` field.
+ */
+function cleanReply(text: string): string {
+  return stripReasoning(text)
+    // Remove lines that look like "Action: NONE" / "Action: GLITCH_FLASH" etc.
+    .replace(/^[\s]*Action:\s*(NONE|GLITCH_FLASH|FAKE_CRASH|JUMPSCARE|INTEGRITY_SHAKE)[\s]*$/gim, "")
+    // Collapse multiple blank lines left behind by stripped content
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 
 /**
@@ -225,7 +252,8 @@ Deno.serve(async (req) => {
         ...messages.slice(-MAX_HISTORY),
       ],
       temperature: 0.9,
-      max_tokens: 400, // JSON wrapper adds tokens; avoid finish_reason "length"
+      // Kimi K2 uses extra tokens for reasoning traces; keep total bounded.
+      max_tokens: 512,
       // Force valid JSON output (model is also told to emit JSON in the prompt).
       response_format: { type: "json_object" },
     };
@@ -252,10 +280,14 @@ Deno.serve(async (req) => {
     }
 
     const data = await upstream.json();
-    const content =
-      data?.choices?.[0]?.message?.content?.trim() ?? "";
+    const message = data?.choices?.[0]?.message ?? {};
+    // Reasoning models may return reasoning in `reasoning_content` or inside
+    // `<think>` tags in `content`. We intentionally use only `content` and
+    // strip any reasoning traces before parsing the final JSON reply.
+    let rawContent = typeof message.content === "string" ? message.content : "";
+    rawContent = stripReasoning(rawContent).trim();
 
-    if (!content) {
+    if (!rawContent) {
       return new Response(JSON.stringify({ error: "Empty response" }), {
         status: 502,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -263,11 +295,11 @@ Deno.serve(async (req) => {
     }
 
     // Parse structured output; degrade gracefully if the model drifts.
-    const parsed = extractJsonObject(content);
+    const parsed = extractJsonObject(rawContent);
     let reply = parsed && typeof parsed.reply === "string"
-      ? parsed.reply.trim()
+      ? cleanReply(parsed.reply)
       : "";
-    if (!reply) reply = content; // fallback: treat whole content as the reply
+    if (!reply) reply = cleanReply(rawContent); // fallback: treat whole content as the reply
     const action = parseAction(parsed?.action);
 
     return new Response(JSON.stringify({ reply, action }), {
