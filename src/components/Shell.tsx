@@ -1,8 +1,9 @@
-import { useState, type ReactNode } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { useGameStore } from "../store";
 import { useChatStore } from "../stores/chatStore";
 import { usePuzzleStore } from "../stores/puzzleStore";
+import { useEffectStore } from "../stores/effectStore";
 import HelpOverlay from "./HelpOverlay";
 
 const NAV_ITEMS = [
@@ -14,6 +15,18 @@ const NAV_ITEMS = [
 
 function IntegrityMeter() {
   const integrity = useGameStore((s) => s.systemIntegrity);
+  const activeEffect = useEffectStore((s) => s.active);
+  const clearEffect = useEffectStore((s) => s.clear);
+  const [shaking, setShaking] = useState(false);
+
+  /* INTEGRITY_SHAKE — shake the meter when ENTITY_01 triggers it */
+  useEffect(() => {
+    if (activeEffect !== "INTEGRITY_SHAKE") return;
+    setShaking(true);
+    clearEffect();
+    const t = setTimeout(() => setShaking(false), 650);
+    return () => clearTimeout(t);
+  }, [activeEffect, clearEffect]);
 
   const colorClass =
     integrity <= 30
@@ -30,7 +43,10 @@ function IntegrityMeter() {
         : "text-emerald-400";
 
   return (
-    <div className="flex items-center gap-3">
+    <div
+      data-shaking={shaking}
+      className={`flex items-center gap-3 ${shaking ? "animate-integrity-shake" : ""}`}
+    >
       <span className="text-[11px] font-mono text-zinc-500 tracking-widest">
         SYSTEM_INTEGRITY
       </span>

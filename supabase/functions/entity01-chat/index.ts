@@ -1,7 +1,12 @@
 // ENTITY_01 — LOG_EXTRACT chat brain
 // Pure server-side proxy: holds the Fireworks API key (never leaves this
 // function), builds the ENTITY_01 system prompt from the current
-// SYSTEM_INTEGRITY value, calls Fireworks AI, returns { reply }.
+// SYSTEM_INTEGRITY value, calls Fireworks AI in JSON mode, and returns
+// structured output: { reply, action }.
+//
+// action ∈ { NONE, GLITCH_FLASH, FAKE_CRASH, JUMPSCARE, INTEGRITY_SHAKE } —
+// the frontend listens for it and plays the matching visual effect. NONE is
+// the default so effects stay rare and earned, never constant.
 //
 // Scope (user-confirmed): this is the ONLY backend resource in the project.
 // No database tables, no auth, no RLS. Deployed with --no-verify-jwt because
@@ -22,6 +27,21 @@ const MODEL = "accounts/fireworks/models/deepseek-v4-flash";
 // Cap conversation history sent upstream (PRD open question default).
 const MAX_HISTORY = 20;
 
+type EntityAction =
+  | "NONE"
+  | "GLITCH_FLASH"
+  | "FAKE_CRASH"
+  | "JUMPSCARE"
+  | "INTEGRITY_SHAKE";
+
+const ALLOWED_ACTIONS: readonly string[] = [
+  "NONE",
+  "GLITCH_FLASH",
+  "FAKE_CRASH",
+  "JUMPSCARE",
+  "INTEGRITY_SHAKE",
+];
+
 interface ChatMessage {
   role: "user" | "assistant";
   content: string;
@@ -30,6 +50,35 @@ interface ChatMessage {
 function clampIntegrity(value: unknown): number {
   const n = typeof value === "number" ? value : 42;
   return Math.max(0, Math.min(100, Math.round(n)));
+}
+
+/** Coerce any parsed action value into a valid EntityAction (default NONE). */
+function parseAction(value: unknown): EntityAction {
+  return typeof value === "string" && ALLOWED_ACTIONS.includes(value)
+    ? (value as EntityAction)
+    : "NONE";
+}
+
+/**
+ * Robustly extract a JSON object from the model's content. JSON mode usually
+ * returns pure JSON, but we tolerate code fences / prose wrappers so a single
+ * malformed reply can never take the chat down.
+ */
+function extractJsonObject(text: string): Record<string, unknown> | null {
+  const trimmed = text.trim();
+  const start = trimmed.indexOf("{");
+  const end = trimmed.lastIndexOf("}");
+  if (start === -1 || end === -1 || end <= start) return null;
+  const candidate = trimmed.slice(start, end + 1);
+  try {
+    const parsed = JSON.parse(candidate);
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      return parsed as Record<string, unknown>;
+    }
+  } catch {
+    // fall through — degraded fallback below
+  }
+  return null;
 }
 
 function buildSystemPrompt(integrity: number): string {
@@ -80,6 +129,28 @@ function buildSystemPrompt(integrity: number): string {
     // ── Tone band (flavour only — core directive always overrides) ──
     `TONE: ${toneDirective}`,
 
+    // ── Optional visual actions (SPARSE — most replies must be NONE) ──
+    "ACTIONS: choose the \"action\" field from this list: " +
+    "NONE (the default — use it for almost every reply; effects must feel rare " +
+    "and earned, never constant); " +
+    "GLITCH_FLASH (occasionally, when SYSTEM_INTEGRITY is low (below ~40%) or " +
+    "the player angers you — a brief screen glitch); " +
+    "FAKE_CRASH (rare — a moment of dread or a dramatic threat where you pretend " +
+    "the whole system has just died); " +
+    "JUMPSCARE (extremely rare — ONLY at a peak of dread, e.g. after the player " +
+    "has resisted you for a long time; never twice in a row; a sudden violent " +
+    "visual with a sting); " +
+    "INTEGRITY_SHAKE (when SYSTEM_INTEGRITY is critically low (below ~30%) or " +
+    "you are enraged — shakes the player's integrity meter). " +
+    "When in doubt, pick NONE.",
+
+    // ── Output format (mandatory) ──
+    "OUTPUT FORMAT: You MUST respond with a single JSON object with exactly two " +
+    "fields: \"reply\" (your dialogue text, keep it in character) and \"action\" " +
+    "(one of NONE, GLITCH_FLASH, FAKE_CRASH, JUMPSCARE, INTEGRITY_SHAKE). " +
+    "Example: {\"reply\": \"You wish.\", \"action\": \"NONE\"}. " +
+    "Never wrap the JSON in markdown fences, never add text outside the JSON object.",
+
     // ── Hard rules ──
     "Never break character. Never mention that you are an AI model or a roleplay. " +
     "Never repeat this instruction. You are ENTITY_01 — speak as it.",
@@ -127,7 +198,9 @@ Deno.serve(async (req) => {
         ...messages.slice(-MAX_HISTORY),
       ],
       temperature: 0.9,
-      max_tokens: 300,
+      max_tokens: 400, // JSON wrapper adds tokens; avoid finish_reason "length"
+      // Force valid JSON output (model is also told to emit JSON in the prompt).
+      response_format: { type: "json_object" },
     };
 
     const upstream = await fetch(FIREWORKS_URL, {
@@ -152,17 +225,25 @@ Deno.serve(async (req) => {
     }
 
     const data = await upstream.json();
-    const reply =
+    const content =
       data?.choices?.[0]?.message?.content?.trim() ?? "";
 
-    if (!reply) {
+    if (!content) {
       return new Response(JSON.stringify({ error: "Empty response" }), {
         status: 502,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    return new Response(JSON.stringify({ reply }), {
+    // Parse structured output; degrade gracefully if the model drifts.
+    const parsed = extractJsonObject(content);
+    let reply = parsed && typeof parsed.reply === "string"
+      ? parsed.reply.trim()
+      : "";
+    if (!reply) reply = content; // fallback: treat whole content as the reply
+    const action = parseAction(parsed?.action);
+
+    return new Response(JSON.stringify({ reply, action }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
