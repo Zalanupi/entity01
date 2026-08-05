@@ -250,6 +250,101 @@ body::after {
   animation: flash-red 0.7s ease-out forwards;
 }
 
+/* === DEGRADATION TIER EFFECTS — applied via [data-degradation] on <html> === */
+
+/* ── Keyframes ── */
+
+/* Occasional 1-frame glitch flicker on headings (unstable) */
+@keyframes heading-glitch-flash {
+  0%, 91%, 95%, 100% { text-shadow: none; transform: translate(0); }
+  92% { text-shadow: -2px 0 rgba(220,38,38,0.6), 2px 0 rgba(0,200,255,0.3); transform: translate(-2px, 1px); }
+  93% { text-shadow: 2px 0 rgba(220,38,38,0.6), -2px 0 rgba(0,200,255,0.3); transform: translate(2px, -1px); }
+  94% { text-shadow: -1px 0 rgba(220,38,38,0.8), 1px 0 rgba(0,200,255,0.4); transform: translate(-1px, 0); }
+}
+
+/* Subtle chromatic aberration drift (unstable) */
+@keyframes chromatic-drift {
+  0%, 100% { text-shadow: none; }
+  25% { text-shadow: 0.5px 0 rgba(255,0,0,0.12), -0.5px 0 rgba(0,180,255,0.10); }
+  50% { text-shadow: -0.5px 0 rgba(255,0,0,0.08), 0.5px 0 rgba(0,200,255,0.08); }
+  75% { text-shadow: 0.3px 0 rgba(255,0,0,0.15), -0.3px 0 rgba(0,200,255,0.12); }
+}
+
+/* Persistent glitch distortion (critical) */
+@keyframes persistent-glitch {
+  0%, 82%, 86%, 90%, 100% { text-shadow: none; transform: translate(0); }
+  83% { text-shadow: -2px 0 rgba(220,38,38,0.7), 2px 0 rgba(0,200,255,0.3); transform: translate(-2px, 1px) skewX(-0.5deg); }
+  84% { text-shadow: 2px 0 rgba(220,38,38,0.7), -2px 0 rgba(0,200,255,0.3); transform: translate(2px, -1px) skewX(0.5deg); }
+  85% { text-shadow: -1px 0 rgba(220,38,38,0.5), 1px 0 rgba(0,200,255,0.2); transform: translate(-1px, 0); }
+}
+
+/* Log line jitter (critical) */
+@keyframes log-line-jitter {
+  0% { transform: translate(0, 0); }
+  15% { transform: translate(1px, -1px); }
+  30% { transform: translate(-1px, 1px); }
+  50% { transform: translate(2px, 0); }
+  70% { transform: translate(-2px, -1px); }
+  85% { transform: translate(0, 1px); }
+  100% { transform: translate(0, 0); }
+}
+
+/* ── Tier: unstable (30–60%) ── */
+
+[data-degradation="unstable"] .shell-header {
+  animation: heading-glitch-flash 5s infinite;
+}
+
+[data-degradation="unstable"] .shell-sidebar {
+  animation: chromatic-drift 3s ease-in-out infinite;
+}
+
+[data-degradation="unstable"] .shell-nav-link {
+  animation: heading-glitch-flash 7s infinite;
+  animation-delay: calc(var(--nav-index, 0) * 0.5s);
+}
+
+/* ── Tier: critical (< 30%) ── */
+
+[data-degradation="critical"] .shell-header {
+  animation: persistent-glitch 2.5s infinite;
+  border-bottom-color: rgb(220 38 38 / 0.5) !important;
+}
+
+[data-degradation="critical"] .shell-sidebar {
+  border-right-color: rgb(220 38 38 / 0.4) !important;
+  animation: persistent-glitch 3s infinite;
+}
+
+[data-degradation="critical"] .shell-nav-link {
+  animation: persistent-glitch 3.5s infinite;
+  animation-delay: calc(var(--nav-index, 0) * 0.3s);
+}
+
+[data-degradation="critical"] .shell-nav-link.active {
+  border-left-color: rgb(239 68 68 / 0.8) !important;
+  background-color: rgb(239 68 68 / 0.15) !important;
+}
+
+[data-degradation="critical"] .integrity-meter-wrapper {
+  animation: integrity-shake 1.8s ease-in-out infinite;
+}
+
+[data-degradation="critical"] .shell-exit-btn {
+  color: rgb(239 68 68 / 0.8) !important;
+  border-color: rgb(239 68 68 / 0.3) !important;
+}
+
+[data-degradation="critical"] .shell-reboot-btn {
+  color: rgb(251 191 36 / 0.7) !important;
+  border-color: rgb(251 191 36 / 0.3) !important;
+}
+
+/* Utility for critical log jitter */
+.animate-log-jitter {
+  animation: log-line-jitter 0.6s ease-in-out infinite;
+}
+
 /* === prefers-reduced-motion: tone down everything === */
 @media (prefers-reduced-motion: reduce) {
   .animate-glitch-flash-noise,

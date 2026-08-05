@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, type FormEvent } from "react";
+import { useState, useRef, useEffect, useMemo, type FormEvent } from "react";
 import { useGameStore } from "../store";
 import { useChatStore } from "../stores/chatStore";
 
@@ -24,6 +24,25 @@ const LOG_LINES = [
   "[22:41:54] reconnect: attempt 7 — timeout",
   "[22:41:57] SECTOR_2 — checksum mismatch",
   "[22:42:00] entity01: > ... don't ...",
+];
+
+/* ── Critical-level error lines (injected when systemIntegrity <= 30) ── */
+const CRITICAL_ENTRIES = [
+  "[22:41:04] CRITICAL: sector_4 containment breach — immediate intervention required",
+  "[22:41:07] FATAL: memory heap corruption at 0xDEADBEEF",
+  "[22:41:10] CRITICAL: connection_unstable — retry 7/5 exceeded",
+  "[22:41:13] FATAL: watchdog timeout — no heartbeat for 42s",
+  "[22:41:16] CRITICAL: cascade failure in sector_7 — spreading",
+  "[22:41:19] FATAL: entropy pool depleted — system unstable",
+  "[22:41:22] CRITICAL: daemon pid 3412 terminated unexpectedly",
+  "[22:41:25] FATAL: cache corruption — page table mismatch",
+  "[22:41:28] CRITICAL: port 443 timeout — external link lost",
+  "[22:41:31] FATAL: unmapped sector 0xDEAD access denied",
+  "[22:41:34] CRITICAL: entity01 signal spike — anomalous data",
+  "[22:41:37] FATAL: power rail 3 failure — critical drop",
+  "[22:41:40] CRITICAL: clock skew exceeds safety margin (+4100ms)",
+  "[22:41:43] FATAL: reconnect daemon — all attempts exhausted",
+  "[22:41:46] CRITICAL: memory 98% fragmentation — imminent collapse",
 ];
 
 /* ── Quick-reply presets ── */
@@ -53,12 +72,37 @@ export default function LogExtractPage() {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const logRef = useRef<HTMLDivElement>(null);
 
+  /* ── Critical log state: auto-reacts when integrity drops <= 30 ── */
+  const isCriticalLog = systemIntegrity <= 30;
+  const scrollInterval = isCriticalLog ? 60 : 150;
+  const scrollIncrement = isCriticalLog ? 2 : 1;
+
+  /* ── Mix critical error lines into the log display when critical ── */
+  const displayLines = useMemo(() => {
+    if (!isCriticalLog) return LOG_LINES.map((l) => ({ text: l, isCritical: false }));
+
+    const result: { text: string; isCritical: boolean }[] = [];
+    let critIdx = 0;
+    for (let i = 0; i < LOG_LINES.length; i++) {
+      result.push({ text: LOG_LINES[i], isCritical: false });
+      // Interleave one critical entry after every 3 regular lines
+      if (i % 3 === 2) {
+        result.push({
+          text: CRITICAL_ENTRIES[critIdx % CRITICAL_ENTRIES.length],
+          isCritical: true,
+        });
+        critIdx++;
+      }
+    }
+    return result;
+  }, [isCriticalLog]);
+
   /* ── Auto-scroll chat to latest message ── */
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  /* ── Auto-scroll system log ── */
+  /* ── Auto-scroll system log (speed adapts to integrity) ── */
   useEffect(() => {
     const el = logRef.current;
     if (!el) return;
@@ -66,11 +110,11 @@ export default function LogExtractPage() {
       if (el.scrollTop + el.clientHeight >= el.scrollHeight - 2) {
         el.scrollTop = 0;
       } else {
-        el.scrollTop += 1;
+        el.scrollTop += scrollIncrement;
       }
-    }, 150);
+    }, scrollInterval);
     return () => clearInterval(interval);
-  }, []);
+  }, [scrollInterval, scrollIncrement]);
 
   /* ── Inject glitch keyframes once ── */
   useEffect(() => {
@@ -195,10 +239,25 @@ export default function LogExtractPage() {
       </div>
 
       {/* ── RIGHT: Fake system log ── */}
-      <div className="flex-none w-[280px] border-l border-zinc-800 bg-zinc-950/80 flex flex-col">
-        <div className="flex-none px-3 py-2 border-b border-zinc-800">
-          <span className="text-[10px] tracking-[0.2em] text-zinc-600">
-            SYSTEM_LOG
+      <div
+        data-log-critical={isCriticalLog}
+        className={`flex-none w-[280px] border-l flex flex-col transition-colors duration-300 ${
+          isCriticalLog
+            ? "border-red-900 bg-red-950/20"
+            : "border-zinc-800 bg-zinc-950/80"
+        }`}
+      >
+        <div
+          className={`flex-none px-3 py-2 border-b transition-colors duration-300 ${
+            isCriticalLog ? "border-red-900" : "border-zinc-800"
+          }`}
+        >
+          <span
+            className={`text-[10px] tracking-[0.2em] transition-colors duration-300 ${
+              isCriticalLog ? "text-red-500" : "text-zinc-600"
+            }`}
+          >
+            {isCriticalLog ? "SYSTEM_LOG — CRITICAL" : "SYSTEM_LOG"}
           </span>
         </div>
         <div
@@ -206,20 +265,24 @@ export default function LogExtractPage() {
           className="flex-1 overflow-y-auto px-3 py-2 space-y-1 scroll-smooth"
           style={{ scrollBehavior: "smooth" }}
         >
-          {LOG_LINES.map((line, i) => (
+          {displayLines.map((line, i) => (
             <p
               key={i}
-              className="text-[10px] leading-relaxed font-mono text-zinc-700 select-none"
+              className={`text-[10px] leading-relaxed font-mono select-none transition-colors duration-300 ${
+                isCriticalLog ? "text-red-400/80 animate-log-jitter" : "text-zinc-700"
+              } ${line.isCritical ? "font-bold text-red-400" : ""}`}
             >
-              {line}
+              {line.text}
             </p>
           ))}
-          {LOG_LINES.map((line, i) => (
+          {displayLines.map((line, i) => (
             <p
               key={`repeat-${i}`}
-              className="text-[10px] leading-relaxed font-mono text-zinc-700 select-none"
+              className={`text-[10px] leading-relaxed font-mono select-none transition-colors duration-300 ${
+                isCriticalLog ? "text-red-400/80 animate-log-jitter" : "text-zinc-700"
+              } ${line.isCritical ? "font-bold text-red-400" : ""}`}
             >
-              {line}
+              {line.text}
             </p>
           ))}
         </div>

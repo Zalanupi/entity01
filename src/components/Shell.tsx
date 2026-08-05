@@ -5,6 +5,7 @@ import { useChatStore } from "../stores/chatStore";
 import { usePuzzleStore } from "../stores/puzzleStore";
 import { useEffectStore } from "../stores/effectStore";
 import HelpOverlay from "./HelpOverlay";
+import DegradationOverlay from "../effects/DegradationOverlay";
 
 const NAV_ITEMS = [
   { href: "/log-extract", label: "LOG_EXTRACT" },
@@ -45,7 +46,7 @@ function IntegrityMeter() {
   return (
     <div
       data-shaking={shaking}
-      className={`flex items-center gap-3 ${shaking ? "animate-integrity-shake" : ""}`}
+      className={`integrity-meter-wrapper flex items-center gap-3 ${shaking ? "animate-integrity-shake" : ""}`}
     >
       <span className="text-[11px] font-mono text-zinc-500 tracking-widest">
         SYSTEM_INTEGRITY
@@ -89,8 +90,11 @@ export default function Shell({ children }: { children: ReactNode }) {
 
   return (
     <div className="h-screen flex flex-col bg-zinc-950 text-zinc-300 font-mono overflow-hidden">
+      {/* Continuous degradation overlay (scanlines, vignette, glitch) */}
+      <DegradationOverlay />
+
       {/* Header */}
-      <header className="flex-none flex items-center justify-between h-11 px-4 bg-zinc-900/80 border-b border-zinc-800">
+      <header className="shell-header flex-none flex items-center justify-between h-11 px-4 bg-zinc-900/80 border-b border-zinc-800">
         <div className="flex items-center gap-2">
           <span className="text-xs font-bold text-red-500 tracking-[0.2em]">
             RECOVERY_SHELL
@@ -105,18 +109,19 @@ export default function Shell({ children }: { children: ReactNode }) {
 
       <div className="flex flex-1 min-h-0">
         {/* Sidebar */}
-        <aside className="flex-none w-[220px] flex flex-col bg-zinc-900/50 border-r border-zinc-800">
+        <aside className="shell-sidebar flex-none w-[220px] flex flex-col bg-zinc-900/50 border-r border-zinc-800">
           {/* Nav tabs */}
           <nav className="flex-1 pt-4 px-3 flex flex-col gap-0.5">
-            {NAV_ITEMS.map((item) => {
+            {NAV_ITEMS.map((item, i) => {
               const isActive = location === item.href;
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`cursor-pointer select-none px-3 py-2 text-xs tracking-[0.15em] border-l-2 transition-all duration-150 ${
+                  style={{ "--nav-index": i } as React.CSSProperties}
+                  className={`shell-nav-link cursor-pointer select-none px-3 py-2 text-xs tracking-[0.15em] border-l-2 transition-all duration-150 ${
                     isActive
-                      ? "border-red-500 bg-red-500/10 text-red-300"
+                      ? "active border-red-500 bg-red-500/10 text-red-300"
                       : "border-transparent text-zinc-500 hover:text-zinc-300 hover:border-zinc-600 hover:bg-zinc-800/50"
                   }`}
                 >
@@ -162,7 +167,7 @@ export default function Shell({ children }: { children: ReactNode }) {
               </div>
             ) : (
               <button
-                className="cursor-pointer w-full text-left px-3 py-1.5 text-[10px] tracking-[0.2em] text-amber-700/70 hover:text-amber-400 hover:bg-amber-500/5 border border-transparent hover:border-amber-800 transition-all duration-150"
+                className="shell-reboot-btn cursor-pointer w-full text-left px-3 py-1.5 text-[10px] tracking-[0.2em] text-amber-700/70 hover:text-amber-400 hover:bg-amber-500/5 border border-transparent hover:border-amber-800 transition-all duration-150"
                 onClick={() => {
                   if (!hasBooted) return; // no-op on briefing page
                   setConfirmingReboot(true);
@@ -190,7 +195,7 @@ export default function Shell({ children }: { children: ReactNode }) {
               </div>
             ) : (
               <button
-                className="cursor-pointer w-full text-left px-3 py-1.5 text-[10px] tracking-[0.2em] text-zinc-700 hover:text-red-400 hover:bg-red-500/5 border border-transparent hover:border-red-900 transition-all duration-150"
+                className="shell-exit-btn cursor-pointer w-full text-left px-3 py-1.5 text-[10px] tracking-[0.2em] text-zinc-700 hover:text-red-400 hover:bg-red-500/5 border border-transparent hover:border-red-900 transition-all duration-150"
                 onClick={() => {
                   // EXIT_SYSTEM never navigates away.
                   // Below 100% integrity: in-place denial, shell stays intact.
