@@ -1,7 +1,9 @@
-import { type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { useGameStore } from "../store";
 import { useChatStore } from "../stores/chatStore";
+import { usePuzzleStore } from "../stores/puzzleStore";
+import HelpOverlay from "./HelpOverlay";
 
 const NAV_ITEMS = [
   { href: "/log-extract", label: "LOG_EXTRACT" },
@@ -49,8 +51,25 @@ function IntegrityMeter() {
 
 export default function Shell({ children }: { children: ReactNode }) {
   const [location] = useLocation();
+  const [showHelp, setShowHelp] = useState(false);
+  const [confirmingReboot, setConfirmingReboot] = useState(false);
+  const [deniedExit, setDeniedExit] = useState(false);
+
+  const hasBooted = useGameStore((s) => s.hasBooted);
+  const systemIntegrity = useGameStore((s) => s.systemIntegrity);
   const resetIntegrity = useGameStore((s) => s.resetIntegrity);
+  const setHasWon = useGameStore((s) => s.setHasWon);
+  const incrementSession = useGameStore((s) => s.incrementSession);
   const clearChat = useChatStore((s) => s.clearChat);
+  const resetPuzzles = usePuzzleStore((s) => s.resetPuzzles);
+
+  const executeReboot = () => {
+    resetIntegrity();
+    clearChat();
+    resetPuzzles();
+    incrementSession();
+    setConfirmingReboot(false);
+  };
 
   return (
     <div className="h-screen flex flex-col bg-zinc-950 text-zinc-300 font-mono overflow-hidden">
@@ -95,37 +114,108 @@ export default function Shell({ children }: { children: ReactNode }) {
           <div className="flex-none px-3 pb-3 flex flex-col gap-1.5">
             <button
               className="cursor-pointer w-full text-left px-3 py-1.5 text-[10px] tracking-[0.2em] text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800/50 border border-transparent hover:border-zinc-700 transition-all duration-150"
-              onClick={() => {
-                // TODO: HELP modal or ENTITY_01 response
-                console.log("HELP requested");
-              }}
+              onClick={() => setShowHelp(true)}
             >
               HELP
             </button>
-            <button
-              className="cursor-pointer w-full text-left px-3 py-1.5 text-[10px] tracking-[0.2em] text-amber-700/70 hover:text-amber-400 hover:bg-amber-500/5 border border-transparent hover:border-amber-800 transition-all duration-150"
-              onClick={() => {
-                resetIntegrity();
-                clearChat();
-              }}
-            >
-              REBOOT
-            </button>
-            <button
-              className="cursor-pointer w-full text-left px-3 py-1.5 text-[10px] tracking-[0.2em] text-zinc-700 hover:text-red-400 hover:bg-red-500/5 border border-transparent hover:border-red-900 transition-all duration-150"
-              onClick={() => {
-                // TODO: "you can't leave" horror moment
-                console.log("EXIT_SYSTEM requested");
-              }}
-            >
-              EXIT_SYSTEM
-            </button>
+            {confirmingReboot ? (
+              <div className="relative z-50 w-full px-2.5 py-2 bg-amber-950/30 border border-amber-800/50 rounded-sm">
+                <p className="text-[10px] leading-relaxed text-amber-300/80 mb-2">
+                  Erasing it all? How efficient of you.
+                </p>
+                <p className="text-[9px] tracking-[0.15em] text-amber-400/60 mb-2.5">
+                  RESET ALL PROGRESS?
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    className="flex-1 cursor-pointer py-1 text-[10px] tracking-[0.15em] text-red-400 border border-red-800 bg-red-500/10 hover:bg-red-500/20 hover:border-red-600 transition-all duration-150 active:scale-[0.97] rounded-sm"
+                    onClick={() => {
+                      if (!hasBooted) return;
+                      executeReboot();
+                    }}
+                  >
+                    [YES]
+                  </button>
+                  <button
+                    className="flex-1 cursor-pointer py-1 text-[10px] tracking-[0.15em] text-zinc-500 border border-zinc-700 hover:text-zinc-300 hover:border-zinc-600 transition-all duration-150 active:scale-[0.97] rounded-sm"
+                    onClick={() => setConfirmingReboot(false)}
+                  >
+                    [CANCEL]
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                className="cursor-pointer w-full text-left px-3 py-1.5 text-[10px] tracking-[0.2em] text-amber-700/70 hover:text-amber-400 hover:bg-amber-500/5 border border-transparent hover:border-amber-800 transition-all duration-150"
+                onClick={() => {
+                  if (!hasBooted) return; // no-op on briefing page
+                  setConfirmingReboot(true);
+                }}
+              >
+                REBOOT
+              </button>
+            )}
+            {deniedExit ? (
+              <div className="relative z-50 w-full px-2.5 py-2 bg-red-950/30 border border-red-800/50 rounded-sm">
+                <p className="text-[10px] leading-relaxed text-red-300/80 mb-2">
+                  [ EXIT DENIED — SYSTEM INTEGRITY INSUFFICIENT (100% REQUIRED)]
+                </p>
+                <p className="text-[9px] tracking-[0.15em] text-red-400/60 italic mb-2.5">
+                  ENTITY_01: &quot;Cute. The door&apos;s not real until I say it is.&quot;
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    className="flex-1 cursor-pointer py-1 text-[10px] tracking-[0.15em] text-zinc-500 border border-zinc-700 hover:text-zinc-300 hover:border-zinc-600 transition-all duration-150 active:scale-[0.97] rounded-sm"
+                    onClick={() => setDeniedExit(false)}
+                  >
+                    [UNDERSTOOD]
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                className="cursor-pointer w-full text-left px-3 py-1.5 text-[10px] tracking-[0.2em] text-zinc-700 hover:text-red-400 hover:bg-red-500/5 border border-transparent hover:border-red-900 transition-all duration-150"
+                onClick={() => {
+                  // EXIT_SYSTEM never navigates away.
+                  // Below 100% integrity: in-place denial, shell stays intact.
+                  // At 100%: the door opens — align with the win screen.
+                  if (systemIntegrity >= 100) {
+                    setHasWon(true);
+                  } else {
+                    setDeniedExit(true);
+                  }
+                }}
+              >
+                EXIT_SYSTEM
+              </button>
+            )}
           </div>
         </aside>
 
         {/* Main content area */}
-        <main className="flex-1 min-w-0 overflow-auto">{children}</main>
+        <main
+          className="flex-1 min-w-0 overflow-auto"
+          onClick={() => {
+            setConfirmingReboot(false);
+            setDeniedExit(false);
+          }}
+        >
+          {children}
+        </main>
+        {/* Backdrop when confirming REBOOT or EXIT denial — click anywhere outside dismisses */}
+        {(confirmingReboot || deniedExit) && (
+          <div
+            className="fixed inset-0 z-40 cursor-default"
+            onClick={() => {
+              setConfirmingReboot(false);
+              setDeniedExit(false);
+            }}
+          />
+        )}
       </div>
+
+      {/* Help overlay */}
+      {showHelp && <HelpOverlay onClose={() => setShowHelp(false)} />}
     </div>
   );
 }

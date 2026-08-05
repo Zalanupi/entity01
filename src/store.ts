@@ -3,7 +3,10 @@ import { create } from "zustand";
 interface GameState {
   systemIntegrity: number;
   hasBooted: boolean;
-  /** Increments on every hard reset (REBOOT/EXIT_SYSTEM). Used as a React
+  /** True when the player escapes via EXIT_SYSTEM at 100% integrity —
+   *  renders the WinScreen instead of the Shell. */
+  hasWon: boolean;
+  /** Increments on every hard reset (REBOOT). Used as a React
    *  `key` on puzzle routes so their interactive state remounts fresh. */
   sessionId: number;
   increaseIntegrity: (amount: number) => void;
@@ -11,12 +14,14 @@ interface GameState {
   resetIntegrity: () => void;
   bootSession: () => void;
   setHasBooted: (value: boolean) => void;
+  setHasWon: (value: boolean) => void;
   incrementSession: () => void;
 }
 
 export const useGameStore = create<GameState>((set) => ({
   systemIntegrity: 42,
   hasBooted: false,
+  hasWon: false,
   sessionId: 0,
 
   increaseIntegrity: (amount: number) =>
@@ -34,6 +39,8 @@ export const useGameStore = create<GameState>((set) => ({
   bootSession: () => set({ hasBooted: true }),
 
   setHasBooted: (value: boolean) => set({ hasBooted: value }),
+
+  setHasWon: (value: boolean) => set({ hasWon: value }),
 
   incrementSession: () =>
     set((state) => ({ sessionId: state.sessionId + 1 })),
