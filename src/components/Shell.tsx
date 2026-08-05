@@ -6,6 +6,7 @@ import { usePuzzleStore } from "../stores/puzzleStore";
 import { useEffectStore } from "../stores/effectStore";
 import HelpOverlay from "./HelpOverlay";
 import DegradationOverlay from "../effects/DegradationOverlay";
+import bgUrl from "../assets/Trapped AI in an Ominous Mainframe.png";
 
 const NAV_ITEMS = [
   { href: "/log-extract", label: "LOG_EXTRACT" },
@@ -89,7 +90,15 @@ export default function Shell({ children }: { children: ReactNode }) {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-zinc-950 text-zinc-300 font-mono overflow-hidden">
+    <div
+      className="h-screen flex flex-col bg-zinc-950 text-zinc-300 font-mono overflow-hidden"
+      style={{
+        backgroundImage: `url(${bgUrl})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+      }}
+    >
       {/* Continuous degradation overlay (scanlines, vignette, glitch) */}
       <DegradationOverlay />
 
