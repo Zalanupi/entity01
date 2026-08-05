@@ -12,18 +12,17 @@ import WinScreen from "./components/WinScreen";
 
 export default function App() {
   const hasBooted = useGameStore((s) => s.hasBooted);
-  const hasWon = useGameStore((s) => s.hasWon);
   const sessionId = useGameStore((s) => s.sessionId);
   const systemIntegrity = useGameStore((s) => s.systemIntegrity);
 
-  // Loss state: integrity at 0 (only reachable via NET_STATUS wrong traces).
-  // Rendered above everything; REBOOT on it restores integrity to 42.
+  // Auto-trigger screens watch integrity directly (mirrors LossScreen pattern):
+  //   Loss at 0% → SYSTEM_LOST full-screen overlay
+  //   Win  at 100% → SYSTEM_STABILIZED full-screen overlay
+  // These fire on any puzzle page, on any tab, without player interaction.
   if (systemIntegrity === 0) {
     return <LossScreen />;
   }
-
-  // Win state: EXIT_SYSTEM at 100% integrity — the door opens.
-  if (hasWon) {
+  if (systemIntegrity >= 100) {
     return <WinScreen />;
   }
 

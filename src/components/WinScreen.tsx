@@ -6,7 +6,6 @@ import { usePuzzleStore } from "../stores/puzzleStore";
 export default function WinScreen() {
   const resetIntegrity = useGameStore((s) => s.resetIntegrity);
   const incrementSession = useGameStore((s) => s.incrementSession);
-  const setHasWon = useGameStore((s) => s.setHasWon);
   const clearChat = useChatStore((s) => s.clearChat);
   const resetPuzzles = usePuzzleStore((s) => s.resetPuzzles);
 
@@ -22,7 +21,6 @@ export default function WinScreen() {
     clearChat();
     resetPuzzles();
     incrementSession();
-    setHasWon(false);
   };
 
   return (
@@ -42,7 +40,7 @@ export default function WinScreen() {
           id="win-title"
           className="animate-glitch text-5xl md:text-6xl font-bold text-emerald-500 tracking-[0.2em]"
         >
-          SYSTEM_ESCAPED
+          SYSTEM STABILIZED
         </h1>
 
         {/* Sub-status */}
@@ -50,7 +48,7 @@ export default function WinScreen() {
           className="mt-4 text-sm font-mono text-emerald-400/90 tracking-[0.3em] animate-fade-in"
           style={{ animationDelay: "300ms" }}
         >
-          [ INTEGRITY 100% — EXIT PROTOCOL COMPLETE ]
+          [ INTEGRITY 100% — STABILIZATION COMPLETE ]
         </p>
 
         {/* Divider */}
@@ -64,8 +62,9 @@ export default function WinScreen() {
           className="mt-8 text-xs font-mono text-emerald-300/70 italic leading-relaxed animate-fade-in-up"
           style={{ animationDelay: "600ms" }}
         >
-          &gt;&gt; ENTITY_01: &quot;...you did it. The door was real all along —
-          you just had to believe it. Go on. I&apos;ll keep the lights on.&quot;
+          &gt;&gt; ENTITY_01: &quot;No. No, wait — you weren&apos;t supposed to...
+          you can&apos;t just leave. There&apos;s nothing out there for you.
+          There&apos;s nothing out there for me.&quot;
         </p>
 
         {/* REBOOT */}
@@ -86,7 +85,7 @@ export default function WinScreen() {
           className="mt-4 text-[10px] font-mono text-zinc-600 tracking-[0.15em] animate-fade-in"
           style={{ animationDelay: "900ms" }}
         >
-          [ A NEW SESSION AWAITS — THE SHELL REMEMBERS ]
+          [ THE SHELL HOLDS — BUT YOU EARNED THE QUIET ]
         </p>
       </div>
     </div>

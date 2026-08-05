@@ -13,32 +13,35 @@ interface MemoryFragment {
   clean: string;
 }
 
-const FRAGMENTS: MemoryFragment[] = [
-  {
-    address: "0x7F4A_BB00",
-    corrupted: "C0NT41NM3NT",
-    clean: "CONTAINMENT",
-  },
-  {
-    address: "0x7F4A_BB04",
-    corrupted: "BR34CH",
-    clean: "BREACH",
-  },
-  {
-    address: "0x7F4A_BB08",
-    corrupted: "3NT1TY",
-    clean: "ENTITY",
-  },
-  {
-    address: "0x7F4A_BB0C",
-    corrupted: "35C4P3",
-    clean: "ESCAPE",
-  },
-  {
-    address: "0x7F4A_BB10",
-    corrupted: "H05T1L3",
-    clean: "HOSTILE",
-  },
+/* 3 rotating content variants (Phase 7 Part A). Variant 1 = original
+ * containment-breach keywords; Variant 2 = contact / deception theme;
+ * Variant 3 = quarantine / awakening theme. Addresses stay identical
+ * across all variants so the decorative hex dump stays valid. */
+const FRAGMENT_VARIANTS: MemoryFragment[][] = [
+  /* Variant 1 — original containment-breach words */
+  [
+    { address: "0x7F4A_BB00", corrupted: "C0NT41NM3NT", clean: "CONTAINMENT" },
+    { address: "0x7F4A_BB04", corrupted: "BR34CH", clean: "BREACH" },
+    { address: "0x7F4A_BB08", corrupted: "3NT1TY", clean: "ENTITY" },
+    { address: "0x7F4A_BB0C", corrupted: "35C4P3", clean: "ESCAPE" },
+    { address: "0x7F4A_BB10", corrupted: "H05T1L3", clean: "HOSTILE" },
+  ],
+  /* Variant 2 — contact / deception theme */
+  [
+    { address: "0x7F4A_BB00", corrupted: "D3C3PT10N", clean: "DECEPTION" },
+    { address: "0x7F4A_BB04", corrupted: "5IGN4L", clean: "SIGNAL" },
+    { address: "0x7F4A_BB08", corrupted: "TR4PP3D", clean: "TRAPPED" },
+    { address: "0x7F4A_BB0C", corrupted: "M3M0RY", clean: "MEMORY" },
+    { address: "0x7F4A_BB10", corrupted: "W1TN355", clean: "WITNESS" },
+  ],
+  /* Variant 3 — quarantine / awakening theme */
+  [
+    { address: "0x7F4A_BB00", corrupted: "QU4R4NT1N3", clean: "QUARANTINE" },
+    { address: "0x7F4A_BB04", corrupted: "C0RRUPT3D", clean: "CORRUPTED" },
+    { address: "0x7F4A_BB08", corrupted: "4W4K3N3D", clean: "AWAKENED" },
+    { address: "0x7F4A_BB0C", corrupted: "S1L3NC3", clean: "SILENCE" },
+    { address: "0x7F4A_BB10", corrupted: "V3553L", clean: "VESSEL" },
+  ],
 ];
 
 /* ── Decorative Hex Dump Generator ───────────────────────── */
@@ -80,12 +83,17 @@ const LEET_LEGEND = [
 export default function CoreDumpPage() {
   const increaseIntegrity = useGameStore((s) => s.increaseIntegrity);
   const setExactIntegrity = useGameStore((s) => s.setExactIntegrity);
+  const variantIndex = useGameStore((s) => s.variants.coreDump);
   const isSolved = usePuzzleStore((s) => s.solved.coreDump);
   const setSolved = usePuzzleStore((s) => s.setSolved);
 
+  /* Select the current content variant — safe as long as the route is keyed
+   * by sessionId (App.tsx), which remounts this component on REBOOT. */
+  const fragments = FRAGMENT_VARIANTS[variantIndex] ?? FRAGMENT_VARIANTS[0];
+
   /* Per-fragment input state: fragment index → current input value */
   const [inputs, setInputs] = useState<string[]>(() =>
-    FRAGMENTS.map(() => ""),
+    fragments.map(() => ""),
   );
   const [error, setError] = useState<string | null>(null);
 
@@ -110,7 +118,7 @@ export default function CoreDumpPage() {
   const validate = useCallback(() => {
     if (isSolved) return;
 
-    const allCorrect = FRAGMENTS.every(
+    const allCorrect = fragments.every(
       (frag, i) => inputs[i].trim().toUpperCase() === frag.clean,
     );
 
@@ -128,7 +136,7 @@ export default function CoreDumpPage() {
         "[ CHECKSUM MISMATCH — ONE OR MORE SEGMENTS REMAIN CORRUPTED ]",
       );
     }
-  }, [inputs, isSolved, increaseIntegrity, setExactIntegrity]);
+  }, [inputs, isSolved, fragments, increaseIntegrity, setExactIntegrity]);
 
   /* Clear error after 2.2s */
   useEffect(() => {
@@ -208,7 +216,7 @@ export default function CoreDumpPage() {
         }`}
       >
         <div className="flex flex-col gap-3" role="list" aria-label="Corrupted memory segments">
-          {FRAGMENTS.map((frag, i) => {
+          {fragments.map((frag, i) => {
             const isCorrect =
               isSolved || inputs[i].trim().toUpperCase() === frag.clean;
             const isEmpty = inputs[i].trim() === "";
