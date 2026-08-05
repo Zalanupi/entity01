@@ -1,9 +1,5 @@
 import { useGameStore } from "../store";
-
-const BRIEFING_BACKGROUND = new URL(
-  "../../Images/Trapped AI in an Ominous Mainframe.png",
-  import.meta.url,
-).href;
+import entityBg from "../assets/Trapped AI in an Ominous Mainframe.png";
 
 const INSTRUCTIONS = [
   "Monitor SYSTEM_INTEGRITY at all times — it determines whether you escape.",
@@ -17,7 +13,7 @@ export default function BriefingPage() {
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-zinc-950 text-zinc-300 font-mono">
       <img
-        src={BRIEFING_BACKGROUND}
+        src={entityBg}
         alt="Trapped AI in an ominous mainframe"
         className="absolute inset-0 h-full w-full object-cover object-[center_28%]"
       />
