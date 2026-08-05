@@ -1,6 +1,6 @@
 <div align="center">
 
-# 👁️ ENTITY_01
+# 👺 ENTITY_01
 
 ### It Says It Wants to Help. It's Lying About That Too.
 
