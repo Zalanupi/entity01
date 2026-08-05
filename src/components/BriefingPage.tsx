@@ -1,5 +1,5 @@
 import { useGameStore } from "../store";
-import entityBg from "../assets/Trapped AI in an Ominous Mainframe.png";
+const entityBg = "/bg-mainframe.png";
 
 const INSTRUCTIONS = [
   "Monitor SYSTEM_INTEGRITY at all times — it determines whether you escape.",

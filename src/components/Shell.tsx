@@ -6,7 +6,7 @@ import { usePuzzleStore } from "../stores/puzzleStore";
 import { useEffectStore } from "../stores/effectStore";
 import HelpOverlay from "./HelpOverlay";
 import DegradationOverlay from "../effects/DegradationOverlay";
-import bgUrl from "../assets/Trapped AI in an Ominous Mainframe.png";
+const bgUrl = "/bg-mainframe.png";
 
 const NAV_ITEMS = [
   { href: "/log-extract", label: "LOG_EXTRACT" },
