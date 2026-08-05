@@ -22,10 +22,10 @@ const corsHeaders = {
 
 const FIREWORKS_URL =
   "https://api.fireworks.ai/inference/v1/chat/completions";
-// Kimi K2 reasoning model: Fireworks returns reasoning in `reasoning_content`
-// or wrapped in `<think>...</think>` tags inside `content`. We always strip
-// it before surfacing dialogue to the player.
-const MODEL = "accounts/fireworks/models/kimi-k2-instruct-0905";
+// Reasoning model: Fireworks may return reasoning in `reasoning_content` or
+// wrapped in `<think>...</think>` tags inside `content`. We always strip it
+// before surfacing dialogue to the player.
+const MODEL = "accounts/fireworks/models/deepseek-v4-flash";
 // Cap conversation history sent upstream (PRD open question default).
 const MAX_HISTORY = 20;
 
