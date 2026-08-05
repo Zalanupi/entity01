@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { useGameStore } from "../store";
 
 /* ── Node Data Types ──────────────────────────────────────── */
 
@@ -50,17 +51,47 @@ function buildNodes(): NodeData[] {
 /* ── NetStatusPage ────────────────────────────────────────── */
 
 export default function NetStatusPage() {
+  const decreaseIntegrity = useGameStore((s) => s.decreaseIntegrity);
+  const increaseIntegrity = useGameStore((s) => s.increaseIntegrity);
+
   const [nodes] = useState<NodeData[]>(buildNodes);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const [isSolved] = useState(false);
+  const [isSolved, setIsSolved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   /* Handle card click */
-  const handleSelect = (id: string) => {
-    if (isSolved) return;
-    setSelectedNodeId(id);
-    setError(null);
-  };
+  const handleSelect = useCallback(
+    (id: string) => {
+      if (isSolved) return;
+      setSelectedNodeId(id);
+      setError(null);
+    },
+    [isSolved],
+  );
+
+  /* Handle TRACE_ANOMALY validation */
+  const handleTrace = useCallback(() => {
+    if (!selectedNodeId || isSolved) return;
+    const selectedNode = nodes.find((n) => n.id === selectedNodeId);
+    if (!selectedNode) return;
+
+    if (selectedNode.isAnomaly) {
+      /* ---- CORRECT PATH ---- */
+      setIsSolved(true);
+      increaseIntegrity(15);
+    } else {
+      /* ---- INCORRECT PATH ---- */
+      decreaseIntegrity(10);
+      setError("[ SIGNAL TRACE FAILED — ANOMALY NOT AT THIS NODE ]");
+    }
+  }, [selectedNodeId, nodes, isSolved, decreaseIntegrity, increaseIntegrity]);
+
+  /* Clear error after 2.2s */
+  useEffect(() => {
+    if (!error) return;
+    const id = setTimeout(() => setError(null), 2200);
+    return () => clearTimeout(id);
+  }, [error]);
 
   return (
     <div className="flex flex-col items-center justify-center h-full gap-6 px-6">
@@ -145,18 +176,26 @@ export default function NetStatusPage() {
 
       {/* Error indicator */}
       {error && (
-        <p
-          className="text-[11px] font-mono text-red-400 tracking-[0.1em] animate-fade-in"
-          role="alert"
-          aria-live="assertive"
-        >
-          {error}
-        </p>
+        <>
+          <p
+            className="text-[11px] font-mono text-red-400 tracking-[0.1em] animate-fade-in"
+            role="alert"
+            aria-live="assertive"
+          >
+            {error}
+          </p>
+          <p className="text-[11px] font-mono text-red-300/70 italic text-center max-w-md leading-relaxed animate-fade-in">
+            &gt;&gt; ENTITY_01: &quot;Wrong node. Signal traces are tricky,
+            aren&apos;t they? Don&apos;t worry — I&apos;ll redirect you
+            somewhere... safer.&quot;
+          </p>
+        </>
       )}
 
       {/* TRACE_ANOMALY button */}
       {!isSolved && (
         <button
+          onClick={handleTrace}
           disabled={selectedNodeId === null}
           className="cursor-pointer px-6 py-2 text-[11px] font-mono tracking-[0.2em] text-red-400
                      border border-red-800 bg-red-500/5 hover:bg-red-500/10 hover:border-red-600
