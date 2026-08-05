@@ -4,7 +4,11 @@ let ctx: AudioContext | null = null;
 
 function ensureCtx(): AudioContext | null {
   try {
-    const AC = window.AudioContext || (window as never as { new(): AudioContext })["webkitAudioContext"];
+    const w = window as unknown as {
+      AudioContext?: new () => AudioContext;
+      webkitAudioContext?: new () => AudioContext;
+    };
+    const AC = window.AudioContext || w.webkitAudioContext;
     if (!AC) return null;
     if (!ctx) ctx = new AC();
     if (ctx.state === "suspended") void ctx.resume();

@@ -6,15 +6,47 @@ const PROJECT_URL = "https://mgrkldaisagxuyuqrezh.supabase.co";
 const PUBLISHABLE_KEY = "sb_publishable_pCTIK8UGfyVQjHMsU36zog_hehKdPAb";
 const sb = createClient(PROJECT_URL, PUBLISHABLE_KEY);
 
+/* ── Visual action types (from the Edge Function) ── */
+export type EntityAction =
+  | "NONE"
+  | "GLITCH_FLASH"
+  | "FAKE_CRASH"
+  | "JUMPSCARE"
+  | "INTEGRITY_SHAKE";
+
+const ALLOWED_ACTIONS: readonly string[] = [
+  "NONE",
+  "GLITCH_FLASH",
+  "FAKE_CRASH",
+  "JUMPSCARE",
+  "INTEGRITY_SHAKE",
+];
+
+/** Coerce raw action value into a valid EntityAction; NONE is the default. */
+function normalizeAction(value: unknown): EntityAction {
+  return typeof value === "string" && ALLOWED_ACTIONS.includes(value)
+    ? (value as EntityAction)
+    : "NONE";
+}
+
 /* ── Types ── */
 export interface ChatMessage {
   role: "player" | "entity";
   content: string;
+  /** The visual action ENTITY_01 attached; omitted when NONE. */
+  action?: EntityAction;
 }
 
 interface ChatState {
   messages: ChatMessage[];
   status: "idle" | "sending" | "error";
+
+  /** Last non-NONE action received (null if none yet). */
+  lastAction: EntityAction | null;
+  /** Monotonic counter bumped each time a non-NONE action arrives.
+   *  The listener watches this to fire each effect exactly once. */
+  actionNonce: number;
+
   sendMessage: (
     content: string,
     systemIntegrity: number,
@@ -26,6 +58,8 @@ interface ChatState {
 export const useChatStore = create<ChatState>((set, get) => ({
   messages: [],
   status: "idle",
+  lastAction: null,
+  actionNonce: 0,
 
   sendMessage: async (content: string, systemIntegrity: number) => {
     const { messages } = get();
@@ -49,14 +83,22 @@ export const useChatStore = create<ChatState>((set, get) => ({
         throw new Error(error?.message ?? "No reply");
       }
 
+      // Parse the optional action from the structured response
+      const action = normalizeAction(data.action);
       const entityMsg: ChatMessage = {
         role: "entity",
         content: data.reply,
+        ...(action !== "NONE" ? { action } : {}),
       };
 
       set((s) => ({
         messages: [...s.messages, entityMsg],
         status: "idle",
+        // Only bump the nonce when a non-NONE action arrives so the listener
+        // fires each effect exactly once per response.
+        ...(action !== "NONE"
+          ? { lastAction: action, actionNonce: s.actionNonce + 1 }
+          : {}),
       }));
     } catch {
       const fallback: ChatMessage = {
@@ -70,5 +112,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
   },
 
-  clearChat: () => set({ messages: [], status: "idle" }),
+  clearChat: () =>
+    set({ messages: [], status: "idle", lastAction: null, actionNonce: 0 }),
 }));
