@@ -5,22 +5,26 @@ import { usePuzzleStore } from "../stores/puzzleStore";
 
 export default function WinScreen() {
   const resetIntegrity = useGameStore((s) => s.resetIntegrity);
-  const incrementSession = useGameStore((s) => s.incrementSession);
+  const rollVariants = useGameStore((s) => s.rollVariants);
+  const setHasBooted = useGameStore((s) => s.setHasBooted);
+  const setHasWon = useGameStore((s) => s.setHasWon);
   const clearChat = useChatStore((s) => s.clearChat);
   const resetPuzzles = usePuzzleStore((s) => s.resetPuzzles);
 
-  const rebootRef = useRef<HTMLButtonElement>(null);
+  const playAgainRef = useRef<HTMLButtonElement>(null);
 
-  /* Focus the REBOOT button on mount (modal-style a11y) */
+  /* Focus the PLAY_AGAIN button on mount (modal-style a11y) */
   useEffect(() => {
-    rebootRef.current?.focus();
+    playAgainRef.current?.focus();
   }, []);
 
-  const handleReboot = () => {
-    resetIntegrity(); // → 42, dismisses this overlay
-    clearChat();
-    resetPuzzles();
-    incrementSession();
+  const handlePlayAgain = () => {
+    resetIntegrity();   // → 42, dismisses this overlay
+    clearChat();        // wipe conversation history
+    resetPuzzles();     // unsolve all 3 puzzles
+    rollVariants();     // fresh content variants for next playthrough
+    setHasBooted(false); // return to Briefing/landing screen
+    setHasWon(false);    // clean slate
   };
 
   return (
@@ -67,10 +71,10 @@ export default function WinScreen() {
           There&apos;s nothing out there for me.&quot;
         </p>
 
-        {/* REBOOT */}
+        {/* PLAY_AGAIN — replaces REBOOT on this screen specifically */}
         <button
-          ref={rebootRef}
-          onClick={handleReboot}
+          ref={playAgainRef}
+          onClick={handlePlayAgain}
           className="mt-10 cursor-pointer px-10 py-3 text-xs font-mono tracking-[0.25em] text-emerald-400
                      border border-emerald-800 bg-emerald-500/5 hover:bg-emerald-500/10 hover:border-emerald-600
                      hover:shadow-[0_0_20px_rgba(16,185,129,0.25)]
@@ -78,7 +82,7 @@ export default function WinScreen() {
                      active:scale-[0.97] animate-fade-in-up"
           style={{ animationDelay: "750ms" }}
         >
-          REBOOT
+          PLAY_AGAIN
         </button>
 
         <p
