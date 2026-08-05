@@ -79,6 +79,7 @@ const LEET_LEGEND = [
 
 export default function CoreDumpPage() {
   const increaseIntegrity = useGameStore((s) => s.increaseIntegrity);
+  const setExactIntegrity = useGameStore((s) => s.setExactIntegrity);
   const isSolved = usePuzzleStore((s) => s.solved.coreDump);
   const setSolved = usePuzzleStore((s) => s.setSolved);
 
@@ -115,13 +116,19 @@ export default function CoreDumpPage() {
 
     if (allCorrect) {
       setSolved("coreDump", true);
-      increaseIntegrity(15);
+      /* If this was the last unsolved puzzle, jump directly to 100 */
+      const allSolved = usePuzzleStore.getState().solved;
+      if (Object.values(allSolved).every(Boolean)) {
+        setExactIntegrity(100);
+      } else {
+        increaseIntegrity(15);
+      }
     } else {
       setError(
         "[ CHECKSUM MISMATCH — ONE OR MORE SEGMENTS REMAIN CORRUPTED ]",
       );
     }
-  }, [inputs, isSolved, increaseIntegrity]);
+  }, [inputs, isSolved, increaseIntegrity, setExactIntegrity]);
 
   /* Clear error after 2.2s */
   useEffect(() => {

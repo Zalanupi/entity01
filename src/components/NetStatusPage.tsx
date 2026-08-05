@@ -54,6 +54,7 @@ function buildNodes(): NodeData[] {
 export default function NetStatusPage() {
   const decreaseIntegrity = useGameStore((s) => s.decreaseIntegrity);
   const increaseIntegrity = useGameStore((s) => s.increaseIntegrity);
+  const setExactIntegrity = useGameStore((s) => s.setExactIntegrity);
   const isSolved = usePuzzleStore((s) => s.solved.netStatus);
   const setSolved = usePuzzleStore((s) => s.setSolved);
 
@@ -80,13 +81,19 @@ export default function NetStatusPage() {
     if (selectedNode.isAnomaly) {
       /* ---- CORRECT PATH ---- */
       setSolved("netStatus", true);
-      increaseIntegrity(15);
+      /* If this was the last unsolved puzzle, jump directly to 100 */
+      const allSolved = usePuzzleStore.getState().solved;
+      if (Object.values(allSolved).every(Boolean)) {
+        setExactIntegrity(100);
+      } else {
+        increaseIntegrity(15);
+      }
     } else {
       /* ---- INCORRECT PATH ---- */
       decreaseIntegrity(10);
       setError("[ SIGNAL TRACE FAILED — ANOMALY NOT AT THIS NODE ]");
     }
-  }, [selectedNodeId, nodes, isSolved, decreaseIntegrity, increaseIntegrity]);
+  }, [selectedNodeId, nodes, isSolved, decreaseIntegrity, increaseIntegrity, setExactIntegrity]);
 
   /* Clear error after 2.2s */
   useEffect(() => {

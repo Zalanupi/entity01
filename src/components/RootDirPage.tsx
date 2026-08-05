@@ -177,6 +177,7 @@ function SortableItem({
 
 export default function RootDirPage() {
   const increaseIntegrity = useGameStore((s) => s.increaseIntegrity);
+  const setExactIntegrity = useGameStore((s) => s.setExactIntegrity);
   const isSolved = usePuzzleStore((s) => s.solved.rootDir);
   const setSolved = usePuzzleStore((s) => s.setSolved);
 
@@ -219,11 +220,17 @@ export default function RootDirPage() {
 
     if (allCorrect) {
       setSolved("rootDir", true);
-      increaseIntegrity(15);
+      /* If this was the last unsolved puzzle, jump directly to 100 */
+      const allSolved = usePuzzleStore.getState().solved;
+      if (Object.values(allSolved).every(Boolean)) {
+        setExactIntegrity(100);
+      } else {
+        increaseIntegrity(15);
+      }
     } else {
       setError("[ SEQUENCE MISMATCH — LOG INTEGRITY NOT RESTORED ]");
     }
-  }, [items, isSolved, isDragging, increaseIntegrity]);
+  }, [items, isSolved, isDragging, increaseIntegrity, setExactIntegrity]);
 
   /* Clear error after 2.2s */
   useEffect(() => {

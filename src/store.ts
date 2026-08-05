@@ -10,6 +10,7 @@ interface GameState {
    *  `key` on puzzle routes so their interactive state remounts fresh. */
   sessionId: number;
   increaseIntegrity: (amount: number) => void;
+  setExactIntegrity: (value: number) => void;
   decreaseIntegrity: (amount: number) => void;
   resetIntegrity: () => void;
   bootSession: () => void;
@@ -28,6 +29,10 @@ export const useGameStore = create<GameState>((set) => ({
     set((state) => ({
       systemIntegrity: Math.min(state.systemIntegrity + amount, 100),
     })),
+
+  /** Sets integrity to an exact value (used for the "final puzzle → 100" rule). */
+  setExactIntegrity: (value: number) =>
+    set({ systemIntegrity: value }),
 
   decreaseIntegrity: (amount: number) =>
     set((state) => ({
