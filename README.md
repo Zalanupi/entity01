@@ -1,6 +1,6 @@
 # 👁️ ENTITY_01
 
-![The Prompter](Images/team-banner.jpg)
+![The Prompter](Images/The%20Prompter.png)
 
 > "It says it wants to help. It's lying about that too."
 
