@@ -1,5 +1,10 @@
 import { useGameStore } from "../store";
 
+const BRIEFING_BACKGROUND = new URL(
+  "../../Images/Trapped AI in an Ominous Mainframe.png",
+  import.meta.url,
+).href;
+
 const INSTRUCTIONS = [
   "Monitor SYSTEM_INTEGRITY at all times — it determines whether you escape.",
   "Complete diagnostic tasks via the sidebar to stabilize the system.",
@@ -10,11 +15,20 @@ export default function BriefingPage() {
   const bootSession = useGameStore((s) => s.bootSession);
 
   return (
-    <div className="h-screen w-screen flex flex-col items-center justify-center bg-zinc-950 text-zinc-300 font-mono overflow-hidden relative">
-      {/* Ambient vignette */}
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(0,0,0,0.6)_100%)]" />
+    <div className="relative h-screen w-screen overflow-hidden bg-zinc-950 text-zinc-300 font-mono">
+      <img
+        src={BRIEFING_BACKGROUND}
+        alt="Trapped AI in an ominous mainframe"
+        className="absolute inset-0 h-full w-full object-cover object-[center_28%]"
+      />
 
-      <div className="relative flex flex-col items-center px-6 text-center max-w-2xl">
+      <div
+        className="pointer-events-none absolute inset-0 bg-black/35"
+        aria-hidden="true"
+        role="presentation"
+      />
+
+      <div className="relative z-10 mx-auto flex h-full max-w-2xl flex-col items-center justify-center px-6 text-center">
         {/* Title */}
         <h1
           className="animate-glitch text-4xl font-bold text-red-500 tracking-[0.2em] select-none"
