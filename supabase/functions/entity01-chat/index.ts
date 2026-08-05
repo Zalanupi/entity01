@@ -256,6 +256,10 @@ Deno.serve(async (req) => {
       max_tokens: 512,
       // Force valid JSON output (model is also told to emit JSON in the prompt).
       response_format: { type: "json_object" },
+      // Explicitly disable reasoning output so deepseek-v4-flash doesn't leak
+      // chain-of-thought into the reply text. The stripReasoning fallback
+      // remains as a safety net for any model that ignores this param.
+      reasoning_content: "disabled",
     };
 
     const upstream = await fetch(FIREWORKS_URL, {
