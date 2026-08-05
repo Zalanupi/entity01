@@ -10,6 +10,7 @@ import NetStatusPage from "./components/NetStatusPage";
 
 export default function App() {
   const hasBooted = useGameStore((s) => s.hasBooted);
+  const sessionId = useGameStore((s) => s.sessionId);
 
   // Session-start gate: Briefing Screen renders before the shell
   if (!hasBooted) {
@@ -21,9 +22,16 @@ export default function App() {
       <Shell>
         <Route path="/" component={LogExtractPage} />
         <Route path="/log-extract" component={LogExtractPage} />
-        <Route path="/root-dir" component={RootDirPage} />
-        <Route path="/core-dump" component={CoreDumpPage} />
-        <Route path="/net-status" component={NetStatusPage} />
+        {/* Puzzle routes get a sessionId key so REBOOT remounts them fresh */}
+        <Route path="/root-dir">
+          <RootDirPage key={`root-dir-${sessionId}`} />
+        </Route>
+        <Route path="/core-dump">
+          <CoreDumpPage key={`core-dump-${sessionId}`} />
+        </Route>
+        <Route path="/net-status">
+          <NetStatusPage key={`net-status-${sessionId}`} />
+        </Route>
       </Shell>
     </Router>
   );

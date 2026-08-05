@@ -19,6 +19,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { useGameStore } from "../store";
+import { usePuzzleStore } from "../stores/puzzleStore";
 
 /* ── Puzzle Data ─────────────────────────────────────────── */
 
@@ -176,9 +177,10 @@ function SortableItem({
 
 export default function RootDirPage() {
   const increaseIntegrity = useGameStore((s) => s.increaseIntegrity);
+  const isSolved = usePuzzleStore((s) => s.solved.rootDir);
+  const setSolved = usePuzzleStore((s) => s.setSolved);
 
   const [items, setItems] = useState<LogEntry[]>(() => shuffle(LOG_ENTRIES));
-  const [isSolved, setIsSolved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -216,7 +218,7 @@ export default function RootDirPage() {
     );
 
     if (allCorrect) {
-      setIsSolved(true);
+      setSolved("rootDir", true);
       increaseIntegrity(15);
     } else {
       setError("[ SEQUENCE MISMATCH — LOG INTEGRITY NOT RESTORED ]");

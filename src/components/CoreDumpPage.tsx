@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { useGameStore } from "../store";
+import { usePuzzleStore } from "../stores/puzzleStore";
 
 /* ── Puzzle Data ─────────────────────────────────────────── */
 
@@ -78,12 +79,13 @@ const LEET_LEGEND = [
 
 export default function CoreDumpPage() {
   const increaseIntegrity = useGameStore((s) => s.increaseIntegrity);
+  const isSolved = usePuzzleStore((s) => s.solved.coreDump);
+  const setSolved = usePuzzleStore((s) => s.setSolved);
 
   /* Per-fragment input state: fragment index → current input value */
   const [inputs, setInputs] = useState<string[]>(() =>
     FRAGMENTS.map(() => ""),
   );
-  const [isSolved, setIsSolved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   /* Generate a stable decorative hex dump */
@@ -112,7 +114,7 @@ export default function CoreDumpPage() {
     );
 
     if (allCorrect) {
-      setIsSolved(true);
+      setSolved("coreDump", true);
       increaseIntegrity(15);
     } else {
       setError(

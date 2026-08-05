@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { useGameStore } from "../store";
+import { usePuzzleStore } from "../stores/puzzleStore";
 
 /* ── Node Data Types ──────────────────────────────────────── */
 
@@ -53,10 +54,11 @@ function buildNodes(): NodeData[] {
 export default function NetStatusPage() {
   const decreaseIntegrity = useGameStore((s) => s.decreaseIntegrity);
   const increaseIntegrity = useGameStore((s) => s.increaseIntegrity);
+  const isSolved = usePuzzleStore((s) => s.solved.netStatus);
+  const setSolved = usePuzzleStore((s) => s.setSolved);
 
   const [nodes] = useState<NodeData[]>(buildNodes);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const [isSolved, setIsSolved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   /* Handle card click */
@@ -77,7 +79,7 @@ export default function NetStatusPage() {
 
     if (selectedNode.isAnomaly) {
       /* ---- CORRECT PATH ---- */
-      setIsSolved(true);
+      setSolved("netStatus", true);
       increaseIntegrity(15);
     } else {
       /* ---- INCORRECT PATH ---- */
