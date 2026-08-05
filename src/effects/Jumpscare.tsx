@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useEffectStore } from "../stores/effectStore";
 import { usePrefersReducedMotion } from "./useReducedMotion";
 import { playJumpscareSting } from "./sound";
@@ -6,27 +6,47 @@ import { playJumpscareSting } from "./sound";
 export default function Jumpscare() {
   const clear = useEffectStore((s) => s.clear);
   const reduced = usePrefersReducedMotion();
+  const [visible, setVisible] = useState(false);
+  const [fadingOut, setFadingOut] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
-    playJumpscareSting();
+    // Delay ~120ms so the player reads the unsettling chat line first,
+    // then the jumpscare hits
+    const showTimer = setTimeout(() => {
+      setVisible(true);
+      playJumpscareSting();
 
-    if (reduced) {
-      timerRef.current = setTimeout(clear, 350);
-    } else {
-      timerRef.current = setTimeout(clear, 700);
-    }
+      if (reduced) {
+        // Reduced motion: short visible flash then fade out
+        timerRef.current = setTimeout(() => {
+          setFadingOut(true);
+          timerRef.current = setTimeout(clear, 150);
+        }, 300);
+      } else {
+        // Normal: hold for the full 0.6s strobe cycle, then fade out over 150ms
+        timerRef.current = setTimeout(() => {
+          setFadingOut(true);
+          timerRef.current = setTimeout(clear, 150);
+        }, 600);
+      }
+    }, 120);
 
     return () => {
+      clearTimeout(showTimer);
       if (timerRef.current) clearTimeout(timerRef.current);
     };
   }, [clear, reduced]);
+
+  if (!visible) return null;
 
   if (reduced) {
     return (
       <div
         data-effect="jumpscare"
-        className="fixed inset-0 z-[10000] pointer-events-none flex items-center justify-center"
+        className={`fixed inset-0 z-[10000] pointer-events-none flex items-center justify-center ${
+          fadingOut ? "animate-jumpscare-fadeout" : ""
+        }`}
         aria-hidden="true"
         role="presentation"
       >
@@ -38,7 +58,9 @@ export default function Jumpscare() {
   return (
     <div
       data-effect="jumpscare"
-      className="fixed inset-0 z-[10000] pointer-events-none overflow-hidden"
+      className={`fixed inset-0 z-[10000] pointer-events-none overflow-hidden ${
+        fadingOut ? "animate-jumpscare-fadeout" : ""
+      }`}
       aria-hidden="true"
       role="presentation"
     >

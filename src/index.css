@@ -191,8 +191,9 @@ body::after {
   20%  { background: rgba(200,0,0,0.9); opacity: 1; }
   35%  { background: rgba(0,0,0,0.95); opacity: 1; }
   50%  { background: rgba(255,50,0,0.7); opacity: 1; }
-  70%  { background: rgba(0,0,0,0.9); opacity: 1; }
-  100% { background: rgba(0,0,0,0.95); opacity: 0.8; }
+  65%  { background: rgba(0,0,0,0.9); opacity: 1; }
+  80%  { background: rgba(0,0,0,0.9); opacity: 1; }
+  100% { background: rgba(0,0,0,0.9); opacity: 1; }
 }
 
 @keyframes jumpscare-zoom {
@@ -200,7 +201,14 @@ body::after {
   15%  { transform: scale(1.1); opacity: 1; }
   30%  { transform: scale(0.95); opacity: 1; }
   60%  { transform: scale(1.05); opacity: 1; }
-  100% { transform: scale(1); opacity: 0; }
+  80%  { transform: scale(1); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Fade-out applied when the jumpscare enters its fadingOut phase */
+@keyframes jumpscare-fadeout {
+  from { opacity: 1; }
+  to   { opacity: 0; }
 }
 
 @keyframes flash-red {
@@ -244,6 +252,10 @@ body::after {
 
 .animate-jumpscare-zoom {
   animation: jumpscare-zoom 0.6s ease-out forwards;
+}
+
+.animate-jumpscare-fadeout {
+  animation: jumpscare-fadeout 150ms ease-out forwards;
 }
 
 .animate-flash-red {
