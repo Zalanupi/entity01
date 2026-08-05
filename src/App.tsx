@@ -9,7 +9,6 @@ import CoreDumpPage from "./components/CoreDumpPage";
 import NetStatusPage from "./components/NetStatusPage";
 import LossScreen from "./components/LossScreen";
 import WinScreen from "./components/WinScreen";
-import EntityEffects from "./effects/EntityEffects";
 
 export default function App() {
   const hasBooted = useGameStore((s) => s.hasBooted);
@@ -34,8 +33,6 @@ export default function App() {
 
   return (
     <Router hook={useHashLocation}>
-      {/* Global listener: plays ENTITY_01's visual actions from chat responses */}
-      <EntityEffects />
       <Shell>
         <Route path="/" component={LogExtractPage} />
         <Route path="/log-extract" component={LogExtractPage} />
