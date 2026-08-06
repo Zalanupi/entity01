@@ -8,6 +8,7 @@ A horror escape-room disguised as an IT recovery tool — fix the mainframe, tru
 
 [![Live Demo](https://img.shields.io/badge/demo-live-brightgreen?style=for-the-badge)](https://8m6ds3zxeqsy5ud34e4dk8b1v.nativelyai.app)
 [![Hackathon](https://img.shields.io/badge/AI%20Factory-Native.Builder-red?style=for-the-badge)](https://lablab.ai/ai-hackathons/nativebuilder-build-without-limits)
+[![Submission](https://img.shields.io/badge/lablab.ai-submission-orange?style=for-the-badge)](https://lablab.ai/ai-hackathons/nativebuilder-build-without-limits/theprompters/entity01-a-state-reactive-ai-horror-experience)
 
 </div>
 
